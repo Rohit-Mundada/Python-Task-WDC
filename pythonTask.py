@@ -25,7 +25,7 @@ class Card:
 
 
 class Deck:
-    deck = None
+    deck = [Card("", 0)]
     suits: list = ["Spades", "Hearts", "Clubs", "Diamonds"]
     currCard = 0
 
@@ -45,36 +45,65 @@ class Deck:
         return cardDealt
 
     def closeToEmpty(self) -> bool:
-        return len(self.deck)
+        if len(self.deck) < 10:
+            return True
+        else:
+            return False
 
 
 class Hand:
-    cards = None
-    numCards = 0
+    playerCards = [Card("", 0)]
+    numPlayerCards = 0
 
-    def __init__(self, cards: Type[Card], numCards: int) -> None:
-        self.cards = cards
-        self.numCards = numCards
+    dealerCards = [Card("", 0)]
+    numDealerCards = 0
 
-    def getCards(self) -> str:
+    def __init__(self, playerCards: Type[Card], numPlayerCards: int, dealerCards: Type[Card], numDealerCards: int, playerType: str) -> None:
+        if playerType == "p":
+            self.playerCards = playerCards
+            self.numPlayerCards = numPlayerCards
+        else:
+            self.dealerCards = dealerCards
+            self.numDealerCards = numDealerCards
+
+    def getCards(self, playerType: str) -> str:
         cardsString = ""
-        for card in self.cards:
-            if card.getRank() != 0:
-                cardsString += card.printCard() + "\n"
+        if playerType == "p":
+            for card in self.playerCards:
+                if card.getRank() != 0:
+                    cardsString += card.printCard() + "\n"
+        else:
+            for card in self.dealerCards:
+                if card.getRank() != 0:
+                    cardsString += card.printCard() + "\n"
 
         return cardsString
 
-    def clear(self) -> None:
-        self.numCards = 0
+    def clear(self, playerType: str) -> None:
+        if playerType == "p":
+            self.playerCards.clear()
+            self.numPlayerCards = 0
+        else:
+            self.dealerCards.clear()
+            self.numDealerCards = 0
 
-    def addCard(self, card: Type[Card]) -> None:
-        if self.numCards <= MAX_CARDS:
-            self.cards.append(card)
-            self.numCards += 1
+    def addCard(self, card: Type[Card], playerType: str) -> None:
+        if playerType == "p":
+            if self.numPlayerCards <= MAX_CARDS:
+                self.playerCards.append(card)
+                self.numPlayerCards += 1
+        else:
+            if self.numDealerCards <= MAX_CARDS:
+                self.dealerCards.append(card)
+                self.numDealerCards += 1
 
-    def total(self) -> int:
+    def total(self, playerType: str) -> int:
         scores = {}
-        rankList = [card.getRank() for card in self.cards]
+        rankList = []
+        if playerType == "p":
+            rankList = [card.getRank() for card in self.playerCards]
+        else:
+            rankList = [card.getRank() for card in self.dealerCards]
 
         for i in range(len(rankList)):
             for combination in combinations(rankList, i + 1):
@@ -87,7 +116,7 @@ class Hand:
 
 
 class Player:
-    __hand = None
+    __hand = Hand([Card("", 0)], 0, None, 0, "p")
     __score = 0
 
     def __init__(self, hand: Type[Hand], score: int) -> None:
@@ -97,20 +126,20 @@ class Player:
     def getScore(self) -> int:
         return self.__score
 
-    def hit(self, card: Type[Card]) -> None:
-        self.__hand.addCard(card)
+    def hit(self, card: Type[Card], playerType: str) -> None:
+        self.__hand.addCard(card, playerType)
 
-    def total(self) -> int:
-        return self.__hand.total()
+    def total(self, playerType: str) -> int:
+        return self.__hand.total(playerType)
 
-    def getHand(self) -> str:
-        return self.__hand.getCards()
+    def getHand(self, playerType: str) -> str:
+        return self.__hand.getCards(playerType)
 
     def addPoints(self, points: int) -> None:
         self.__score += points
 
-    def handClear(self) -> None:
-        self.__hand.clear()
+    def handClear(self, playerType: str) -> None:
+        self.__hand.clear(playerType)
 
 
 class Dealer(Player):
@@ -120,7 +149,7 @@ class Dealer(Player):
     def autoPlay(self, d: Type[Deck]) -> None:
         handPointValue = 0
         while handPointValue < 16:
-            self.hit(d.deal())
+            self.hit(d.deal(), "d")
             handPointValue += d.deal().getRank()
 
 
@@ -131,90 +160,134 @@ class BlackJackGame:
 
     def __init__(self, deck: Type[Deck]) -> None:
         self.deck = deck
-        card = Card("", 0)
-        hand = Hand([card], 0)
-        self.dealer: Type[Dealer] = Dealer(hand, 0)
-        self.player: Type[Player] = Player(hand, 0)
-        self.numOfRounds = 0
+
+        playerCard = Card("", 0)
+        dealerCard = Card("", 0)
+
+        playerHand = Hand([playerCard], 0, None, 0, "p")
+        dealerHand = Hand(None, 0, [dealerCard], 0, "d")
+
+        self.dealer: Type[Dealer] = Dealer(playerHand, 0)
+        self.player: Type[Player] = Player(dealerHand, 0)
+
+        self.numOfRounds = 1
 
     def createInitialHand(self, playerType: str) -> None:
         if playerType == "p":
-            self.player.hit(self.deck.deal())
-            self.player.hit(self.deck.deal())
+            self.player.hit(self.deck.deal(), playerType)
+            self.player.hit(self.deck.deal(), playerType)
         else:
-            self.dealer.hit(self.deck.deal())
-            self.dealer.hit(self.deck.deal())
+            self.dealer.hit(self.deck.deal(), playerType)
+            self.dealer.hit(self.deck.deal(), playerType)
 
-    def resetHand(self, p: Type[Player]) -> None:
-        p.handClear()
+    def resetHand(self, p: Type[Player], playerType: str) -> None:
+        p.handClear(playerType)
 
     def play(self) -> None:
-        print("Creating initial hand for player")
-        self.createInitialHand("p")
-        print(self.player.getHand())
-        print("Total points for player:", self.player.total())
 
-        print("Creating initial hand for dealer")
-        self.createInitialHand("d")
-        print(self.dealer.getHand())
-        print("Total points for dealer:", self.dealer.total())
-
-        print("Initial Player Score:", self.player.getScore())
+        print("\nInitial Player Score:", self.player.getScore())
         print("Initial Dealer Score:", self.dealer.getScore())
 
-        while self.deck.closeToEmpty():
-            # # Dealing two cards to player
-            # self.player.hit(self.deck.deal())
-            # self.player.hit(self.deck.deal())
+        while not self.deck.closeToEmpty():
+            print("\nROUND " + str(self.numOfRounds))
+            print("=========")
 
-            # # Dealing two cards to dealer
-            # self.player.hit(self.deck.deal())
-            # self.player.hit(self.deck.deal())
+            # Dealing two cards to player
+            print("\nCreating initial hand for player")
+            self.createInitialHand("p")
+            print(self.player.getHand("p"))
+            print("Total points for player:", self.player.total("p"))
 
-            # Ask for input from player
+            # Dealing two cards to dealer
+            print("\nCreating initial hand for dealer")
+            self.createInitialHand("d")
+            print(self.dealer.getHand("d"))
+            print("Total points for dealer:", self.dealer.total("d"))
+
+            print("\n")
+
+            # Continuously ask for input from player until either HIT or STAY is entered
             inputStr = ""
             while inputStr != "HIT" and inputStr != "STAY":
                 inputStr = input("Enter HIT or STAY: ")
 
+            # DEALER WIN CASE
+
             # If player inputs HIT then deal a card to player and check if points for player are
             # more than 21 then dealer wins the round
             if inputStr == "HIT":
-                self.player.hit(self.deck.deal())
-                print(self.player.getHand())
-                print("Total points for player:", self.player.total())
-                if self.player.total() > 21:
+                self.player.hit(self.deck.deal(), "p")
+                print("\nPlayer hand at round " + str(self.numOfRounds))
+                print(self.player.getHand("p"))
+                print("Total points for player:", self.player.total("p"))
+                if self.player.total("p") >= 21:
                     self.dealer.addPoints(1)
+                    print("\nDealer wins round " + str(self.numOfRounds) + "!")
                     # round is over, reset for next round
-                    # self.resetHand(self.player)
-                    # self.resetHand(self.dealer)
+                    self.resetHand(self.player, "p")
+                    self.resetHand(self.dealer, "d")
+                    # display score after each round ends
+                    print("\nPlayer Score after round " +
+                          str(self.numOfRounds) + ":", self.player.getScore())
+                    print("Dealer Score after round " +
+                          str(self.numOfRounds) + ":", self.dealer.getScore())
+                    # goto next round
+                    self.numOfRounds += 1
+                    continue
 
             # If player inputs STAY then continuously deal cards to dealer until it's score is
             # less than 16
             if inputStr == "STAY":
                 self.dealer.autoPlay(self.deck)
-                print(self.dealer.getHand())
-                print("Total points for dealer:", self.dealer.total())
+                print("\nDealer hand at round " + str(self.numOfRounds))
+                print(self.dealer.getHand("d"))
+                print("Total points for dealer:", self.dealer.total("d"))
+
+            # PLAYER WIN CASE
 
             # If the player has a greater total than the dealer or the dealer total crosses above
             # 21 then player wins the round
-            if self.player.total() > self.dealer.total() or self.dealer.total() > 21:
+            if self.player.total("p") > self.dealer.total("d") or self.dealer.total("d") >= 21:
                 self.player.addPoints(1)
+                print("\nPlayer wins round " + str(self.numOfRounds) + "!")
                 # round is over, reset for next round
-                # self.resetHand(self.player)
-                # self.resetHand(self.dealer)
+                self.resetHand(self.player, "p")
+                self.resetHand(self.dealer, "d")
+                # display score after each round ends
+                print("\nPlayer Score after round " +
+                      str(self.numOfRounds) + ":", self.player.getScore())
+                print("Dealer Score after round " +
+                      str(self.numOfRounds) + ":", self.dealer.getScore())
+                # goto next round
+                self.numOfRounds += 1
+                continue
 
-            self.numOfRounds += 1
+            # DRAW CASE
+            print("\nDraw! for round " + str(self.numOfRounds))
 
-            print("Player Score after round " +
+            # display score after each round ends
+            print("\nPlayer Score after round " +
                   str(self.numOfRounds) + ":", self.player.getScore())
             print("Dealer Score after round " +
                   str(self.numOfRounds) + ":", self.dealer.getScore())
 
+            self.numOfRounds += 1
 
+            # reset hands after each round
+            self.resetHand(self.player, "p")
+            self.resetHand(self.dealer, "d")
+
+        print("\n-=-=-=-=-")
+        print("Game over")
+        print("-=-=-=-=-")
+
+
+print("-=-=-=-=-=-=-=-=-=-=-")
 print("Welcome to BlackJack!")
+print("-=-=-=-=-=-=-=-=-=-=-")
 
 # Create the Deck
-print("Creating Deck")
+print("\nCreating Deck")
 deck: list = []
 suits: list = ["Spades", "Hearts", "Clubs", "Diamonds"]
 suitIndex: int = 0
