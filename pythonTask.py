@@ -45,10 +45,7 @@ class Deck:
         return cardDealt
 
     def closeToEmpty(self) -> bool:
-        if len(self.deck) < 10:
-            return True
-        else:
-            return False
+        return len(self.deck)
 
 
 class Hand:
@@ -152,11 +149,12 @@ class BlackJackGame:
         p.handClear()
 
     def play(self) -> None:
-        print("Creating inital hand for player")
+        print("Creating initial hand for player")
         self.createInitialHand("p")
         print(self.player.getHand())
         print("Total points for player:", self.player.total())
-        print("Creating inital hand for dealer")
+
+        print("Creating initial hand for dealer")
         self.createInitialHand("d")
         print(self.dealer.getHand())
         print("Total points for dealer:", self.dealer.total())
@@ -164,7 +162,7 @@ class BlackJackGame:
         print("Initial Player Score:", self.player.getScore())
         print("Initial Dealer Score:", self.dealer.getScore())
 
-        while not self.deck.closeToEmpty():
+        while self.deck.closeToEmpty():
             # # Dealing two cards to player
             # self.player.hit(self.deck.deal())
             # self.player.hit(self.deck.deal())
