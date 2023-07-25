@@ -7,6 +7,9 @@ MAX_CARDS = 11
 
 
 class Card:
+    suit = ""
+    rank = 0
+
     def __init__(self, suit: str, rank: int) -> None:
         self.suit = suit
         self.rank = rank
@@ -22,9 +25,12 @@ class Card:
 
 
 class Deck:
+    deck = None
+    suits: list = ["Spades", "Hearts", "Clubs", "Diamonds"]
+    currCard = 0
+
     def __init__(self, deck: Type[Card], currCard: int) -> None:
         self.deck = deck
-        self.suits: list = ["Spades", "Hearts", "Clubs", "Diamonds"]
         self.currCard = currCard
 
     def getDeck(self) -> Card:
@@ -46,6 +52,9 @@ class Deck:
 
 
 class Hand:
+    cards = None
+    numCards = 0
+
     def __init__(self, cards: Type[Card], numCards: int) -> None:
         self.cards = cards
         self.numCards = numCards
@@ -81,6 +90,9 @@ class Hand:
 
 
 class Player:
+    __hand = None
+    __score = 0
+
     def __init__(self, hand: Type[Hand], score: int) -> None:
         self.__hand = hand
         self.__score = score
@@ -116,6 +128,10 @@ class Dealer(Player):
 
 
 class BlackJackGame:
+    deck = None
+    dealer = Dealer(None, 0)
+    player = Player(None, 0)
+
     def __init__(self, deck: Type[Deck]) -> None:
         self.deck = deck
         card = Card("", 0)
